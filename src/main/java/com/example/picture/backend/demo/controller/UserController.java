@@ -55,7 +55,7 @@ public class UserController {
     }
 
     @PostMapping("/logout")
-    public BaseResponse<Boolean> userLogin(HttpServletRequest request) {
+    public BaseResponse<Boolean> userLogout(HttpServletRequest request) {
         boolean res = userService.userLogout(request);
         return ResultUtils.success(res);
     }
