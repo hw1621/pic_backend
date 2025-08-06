@@ -1,4 +1,4 @@
-package com.example.picture.backend.demo.model.dto;
+package com.example.picture.backend.demo.model.dto.user;
 
 import com.example.picture.backend.demo.common.PageRequest;
 import lombok.Data;

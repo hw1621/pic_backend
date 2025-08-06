@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.picture.backend.demo.constant.UserConstant;
 import com.example.picture.backend.demo.exception.BusinessException;
 import com.example.picture.backend.demo.exception.ErrorCode;
-import com.example.picture.backend.demo.model.dto.UserQueryRequest;
+import com.example.picture.backend.demo.model.dto.user.UserQueryRequest;
 import com.example.picture.backend.demo.model.entity.User;
 import com.example.picture.backend.demo.model.enums.UserRoleEnum;
 import com.example.picture.backend.demo.model.vo.LoginUserVO;

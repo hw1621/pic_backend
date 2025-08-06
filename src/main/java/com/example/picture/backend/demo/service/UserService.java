@@ -1,7 +1,7 @@
 package com.example.picture.backend.demo.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.example.picture.backend.demo.model.dto.UserQueryRequest;
+import com.example.picture.backend.demo.model.dto.user.UserQueryRequest;
 import com.example.picture.backend.demo.model.entity.User;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.picture.backend.demo.model.vo.LoginUserVO;
