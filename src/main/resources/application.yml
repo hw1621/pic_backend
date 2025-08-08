@@ -12,6 +12,9 @@ spring:
     url: jdbc:mysql://localhost:3306/picture
     username: root
     password:
+  servlet:
+    multipart:
+      max-file-size: 10MB
 
 mybatis-plus:
   configuration:
