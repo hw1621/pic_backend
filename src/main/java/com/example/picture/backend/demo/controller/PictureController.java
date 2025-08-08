@@ -16,6 +16,7 @@ import com.example.picture.backend.demo.model.dto.picture.PictureUpdateRequest;
 import com.example.picture.backend.demo.model.dto.picture.PictureUploadRequest;
 import com.example.picture.backend.demo.model.entity.Picture;
 import com.example.picture.backend.demo.model.entity.User;
+import com.example.picture.backend.demo.model.vo.PictureTagCategory;
 import com.example.picture.backend.demo.model.vo.PictureVO;
 import com.example.picture.backend.demo.service.PictureService;
 import com.example.picture.backend.demo.service.UserService;
@@ -25,7 +26,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 @RestController
 @RequestMapping("/picture")
@@ -184,6 +187,16 @@ public class PictureController {
         boolean result = pictureService.updateById(picture);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         return ResultUtils.success(true);
+    }
+
+    @GetMapping("/tag_category")
+    public BaseResponse<PictureTagCategory> listPictureTagCategory() {
+        PictureTagCategory pictureTagCategory = new PictureTagCategory();
+        List<String> tagList = Arrays.asList("热门", "搞笑", "生活", "高清", "艺术", "校园", "背景", "简历", "创意");
+        List<String> categoryList = Arrays.asList("模板", "电商", "表情包", "素材", "海报");
+        pictureTagCategory.setTagList(tagList);
+        pictureTagCategory.setCategoryList(categoryList);
+        return ResultUtils.success(pictureTagCategory);
     }
 
 }
