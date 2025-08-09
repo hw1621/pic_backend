@@ -1,4 +1,5 @@
 package com.example.picture.backend.demo.service.impl;
+
 import java.util.List;
 
 import cn.hutool.core.collection.CollUtil;
@@ -10,7 +11,9 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.picture.backend.demo.exception.BusinessException;
 import com.example.picture.backend.demo.exception.ErrorCode;
 import com.example.picture.backend.demo.exception.ThrowUtils;
-import com.example.picture.backend.demo.manager.FileManager;
+import com.example.picture.backend.demo.manager.upload.FilePictureUpload;
+import com.example.picture.backend.demo.manager.upload.PictureUploadTemplate;
+import com.example.picture.backend.demo.manager.upload.UrlPictureUpload;
 import com.example.picture.backend.demo.model.dto.file.UploadPictureResult;
 import com.example.picture.backend.demo.model.dto.picture.PictureQueryRequest;
 import com.example.picture.backend.demo.model.dto.picture.PictureReviewRequest;
@@ -44,13 +47,16 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         implements PictureService {
 
     @Resource
-    private FileManager fileManager;
-
-    @Resource
     private UserService userService;
 
+    @Resource
+    private FilePictureUpload filePictureUpload;
+
+    @Resource
+    private UrlPictureUpload urlPictureUpload;
+
     @Override
-    public PictureVO uploadPicture(MultipartFile multipartFile, PictureUploadRequest pictureUploadRequest, User loginUser) {
+    public PictureVO uploadPicture(Object inputSource, PictureUploadRequest pictureUploadRequest, User loginUser) {
         ThrowUtils.throwIf(loginUser == null, ErrorCode.NO_AUTH_ERROR);
         Long pictureId = null;
         if (pictureUploadRequest != null) {
@@ -66,7 +72,11 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         }
 
         String uploadPathPrefix = String.format("public/%s", loginUser.getId());
-        UploadPictureResult uploadPictureResult = fileManager.uploadPicture(multipartFile, uploadPathPrefix);
+        PictureUploadTemplate pictureUploadTemplate = filePictureUpload;
+        if (inputSource instanceof String) {
+            pictureUploadTemplate = urlPictureUpload;
+        }
+        UploadPictureResult uploadPictureResult = pictureUploadTemplate.uploadPicture(inputSource, uploadPathPrefix);
         Picture picture = new Picture();
         picture.setUrl(uploadPictureResult.getUrl());
         picture.setName(uploadPictureResult.getPicName());
@@ -213,7 +223,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         Integer reviewStatus = request.getReviewStatus();
         PictureReviewStatusEnum reviewStatusEnum = PictureReviewStatusEnum.getEnumByValue(reviewStatus);
 
-        if (id == null ||  reviewStatus == null || reviewStatusEnum == null) {
+        if (id == null || reviewStatus == null || reviewStatusEnum == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
@@ -228,6 +238,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         BeanUtils.copyProperties(oldPic, newPic);
         newPic.setReviewerId(loginUser.getId());
         newPic.setReviewTime(new Date());
+        newPic.setReviewStatus(reviewStatus);
         boolean result = this.updateById(newPic);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
 
