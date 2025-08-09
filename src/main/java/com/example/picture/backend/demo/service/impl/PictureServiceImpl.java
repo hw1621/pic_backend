@@ -7,19 +7,23 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.picture.backend.demo.exception.BusinessException;
 import com.example.picture.backend.demo.exception.ErrorCode;
 import com.example.picture.backend.demo.exception.ThrowUtils;
 import com.example.picture.backend.demo.manager.FileManager;
 import com.example.picture.backend.demo.model.dto.file.UploadPictureResult;
 import com.example.picture.backend.demo.model.dto.picture.PictureQueryRequest;
+import com.example.picture.backend.demo.model.dto.picture.PictureReviewRequest;
 import com.example.picture.backend.demo.model.dto.picture.PictureUploadRequest;
 import com.example.picture.backend.demo.model.entity.Picture;
 import com.example.picture.backend.demo.model.entity.User;
+import com.example.picture.backend.demo.model.enums.PictureReviewStatusEnum;
 import com.example.picture.backend.demo.model.vo.PictureVO;
 import com.example.picture.backend.demo.model.vo.UserVO;
 import com.example.picture.backend.demo.service.PictureService;
 import com.example.picture.backend.demo.mapper.PictureMapper;
 import com.example.picture.backend.demo.service.UserService;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -53,10 +57,12 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             pictureId = pictureUploadRequest.getId();
         }
         if (pictureId != null) {
-            boolean exists = this.lambdaQuery()
-                    .eq(Picture::getId, pictureId)
-                    .exists();
-            ThrowUtils.throwIf(!exists, ErrorCode.NOT_FOUND_ERROR, "图片不存在");
+            Picture oldPic = this.getById(pictureId);
+            ThrowUtils.throwIf(oldPic == null, ErrorCode.NOT_FOUND_ERROR);
+            // 仅本人或管理员可编辑图片
+            if (!oldPic.getUserId().equals(loginUser.getId()) && !userService.isAdmin(loginUser)) {
+                throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+            }
         }
 
         String uploadPathPrefix = String.format("public/%s", loginUser.getId());
@@ -70,6 +76,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         picture.setPicScale(uploadPictureResult.getPicScale());
         picture.setPicFormat(uploadPictureResult.getPicFormat());
         picture.setUserId(loginUser.getId());
+        // 填充审核参数
+        fillReviewParam(picture, loginUser);
+
         if (pictureId != null) {
             picture.setId(pictureId);
             picture.setEditTime(new Date());
@@ -100,6 +109,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         Long userId = pictureQueryRequest.getUserId();
         String sortField = pictureQueryRequest.getSortField();
         String sortOrder = pictureQueryRequest.getSortOrder();
+        Integer reviewStatus = pictureQueryRequest.getReviewStatus();
+        String reviewMessage = pictureQueryRequest.getReviewMessage();
+        Long reviewerId = pictureQueryRequest.getReviewerId();
 
         if (StrUtil.isNotBlank(searchText)) {
             queryWrapper.and(qw -> qw.like("name", searchText)
@@ -117,6 +129,10 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         queryWrapper.eq(ObjUtil.isNotEmpty(picHeight), "picHeight", picHeight);
         queryWrapper.eq(ObjUtil.isNotEmpty(picSize), "picSize", picSize);
         queryWrapper.eq(ObjUtil.isNotEmpty(picScale), "picScale", picScale);
+        queryWrapper.eq(ObjUtil.isNotEmpty(reviewStatus), "reviewStatus", reviewStatus);
+        queryWrapper.like(StrUtil.isNotBlank(reviewMessage), "reviewMessage", reviewMessage);
+        queryWrapper.eq(ObjUtil.isNotEmpty(reviewerId), "reviewerId", reviewerId);
+
         // JSON Query
         if (CollUtil.isNotEmpty(tags)) {
             for (String tag : tags) {
@@ -181,19 +197,53 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         String url = picture.getUrl();
         String introduction = picture.getIntroduction();
 
-        ThrowUtils.throwIf(ObjUtil.isNull(id), ErrorCode.PARAMS_ERROR, "id 不能为空");
+        ThrowUtils.throwIf(ObjUtil.isNull(id), ErrorCode.PARAMS_ERROR, "id can't be null");
         if (StrUtil.isNotBlank(url)) {
-            ThrowUtils.throwIf(url.length() > 1024, ErrorCode.PARAMS_ERROR, "url 过长");
+            ThrowUtils.throwIf(url.length() > 1024, ErrorCode.PARAMS_ERROR, "url is too long");
         }
         if (StrUtil.isNotBlank(introduction)) {
-            ThrowUtils.throwIf(introduction.length() > 800, ErrorCode.PARAMS_ERROR, "简介过长");
+            ThrowUtils.throwIf(introduction.length() > 800, ErrorCode.PARAMS_ERROR, "introduction is too long");
         }
     }
 
+    @Override
+    public void doPictureReview(PictureReviewRequest request, User loginUser) {
+        ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);
+        Long id = request.getId();
+        Integer reviewStatus = request.getReviewStatus();
+        PictureReviewStatusEnum reviewStatusEnum = PictureReviewStatusEnum.getEnumByValue(reviewStatus);
 
+        if (id == null ||  reviewStatus == null || reviewStatusEnum == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
 
+        Picture oldPic = this.getById(id);
+        ThrowUtils.throwIf(oldPic == null, ErrorCode.NOT_FOUND_ERROR);
 
+        if (oldPic.getReviewStatus().equals(reviewStatus)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "Picture has been reviewed before");
+        }
 
+        Picture newPic = new Picture();
+        BeanUtils.copyProperties(oldPic, newPic);
+        newPic.setReviewerId(loginUser.getId());
+        newPic.setReviewTime(new Date());
+        boolean result = this.updateById(newPic);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+
+    }
+
+    @Override
+    public void fillReviewParam(Picture picture, User loginUser) {
+        if (userService.isAdmin(loginUser)) {
+            picture.setReviewStatus(PictureReviewStatusEnum.PASS.getValue());
+            picture.setReviewerId(loginUser.getId());
+            picture.setReviewTime(new Date());
+            picture.setReviewMessage("Admin auto-complete review");
+        } else {
+            picture.setReviewStatus(PictureReviewStatusEnum.REVIEWING.getValue());
+        }
+    }
 
 
 }

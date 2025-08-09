@@ -3,6 +3,7 @@ package com.example.picture.backend.demo.service;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.picture.backend.demo.model.dto.picture.PictureQueryRequest;
+import com.example.picture.backend.demo.model.dto.picture.PictureReviewRequest;
 import com.example.picture.backend.demo.model.dto.picture.PictureUploadRequest;
 import com.example.picture.backend.demo.model.entity.Picture;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -30,4 +31,8 @@ public interface PictureService extends IService<Picture> {
     Page<PictureVO> getPictureVOPage(Page<Picture> picturePage, HttpServletRequest request);
 
     void validPicture(Picture picture);
+
+    void doPictureReview(PictureReviewRequest request, User loginUser);
+
+    void fillReviewParam(Picture picture, User loginUser);
 }
