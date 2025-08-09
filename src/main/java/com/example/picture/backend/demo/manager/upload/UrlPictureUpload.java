@@ -9,6 +9,7 @@ import cn.hutool.http.Method;
 import com.example.picture.backend.demo.exception.BusinessException;
 import com.example.picture.backend.demo.exception.ErrorCode;
 import com.example.picture.backend.demo.exception.ThrowUtils;
+import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.net.MalformedURLException;
@@ -16,6 +17,7 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 
+@Service
 public class UrlPictureUpload extends PictureUploadTemplate {
 
     @Override
