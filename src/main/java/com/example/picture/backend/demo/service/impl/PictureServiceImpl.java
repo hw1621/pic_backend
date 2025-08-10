@@ -84,9 +84,15 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             pictureUploadTemplate = urlPictureUpload;
         }
         UploadPictureResult uploadPictureResult = pictureUploadTemplate.uploadPicture(inputSource, uploadPathPrefix);
+
+        // 构造要入库的图片信息
         Picture picture = new Picture();
+        String picName = uploadPictureResult.getPicName();
+        if (pictureUploadRequest != null && StrUtil.isNotBlank(pictureUploadRequest.getPicName())) {
+            picName = pictureUploadRequest.getPicName();
+        }
+        picture.setName(picName);
         picture.setUrl(uploadPictureResult.getUrl());
-        picture.setName(uploadPictureResult.getPicName());
         picture.setPicSize(uploadPictureResult.getPicSize());
         picture.setPicWidth(uploadPictureResult.getPicWidth());
         picture.setPicHeight(uploadPictureResult.getPicHeight());
@@ -266,9 +272,16 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
     @Override
     public int uploadPictureByBatch(PictureUploadByBatchRequest pictureUploadByBatchRequest, User loginUser) {
         String searchText = pictureUploadByBatchRequest.getSearchText();
+
+        String namePrefix = pictureUploadByBatchRequest.getNamePrefix();
+        if (StrUtil.isNotBlank(searchText)) {
+            namePrefix = searchText;
+        }
+
         // 格式化数量
         Integer count = pictureUploadByBatchRequest.getCount();
-        ThrowUtils.throwIf(count > 30, ErrorCode.PARAMS_ERROR, "最多 30 条");
+        ThrowUtils.throwIf(count > 30, ErrorCode.PARAMS_ERROR, "At most 30 items");
+
         // 要抓取的地址
         String fetchUrl = String.format("https://cn.bing.com/images/async?q=%s&mmasync=1", searchText);
         Document document;
@@ -276,12 +289,14 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             document = Jsoup.connect(fetchUrl).get();
         } catch (IOException e) {
             log.error("获取页面失败", e);
-            throw new BusinessException(ErrorCode.OPERATION_ERROR, "获取页面失败");
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "Get picture url error");
         }
+        // 通过class找到Document里包含图片的Element
         Element div = document.getElementsByClass("dgControl").first();
         if (ObjUtil.isNull(div)) {
-            throw new BusinessException(ErrorCode.OPERATION_ERROR, "获取元素失败");
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "Get elemetn div error");
         }
+
         Elements imgElementList = div.select("img.mimg");
         int uploadCount = 0;
         for (Element imgElement : imgElementList) {
@@ -297,6 +312,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             }
             // 上传图片
             PictureUploadRequest pictureUploadRequest = new PictureUploadRequest();
+            pictureUploadRequest.setPicName(namePrefix + (uploadCount + 1));
             try {
                 PictureVO pictureVO = this.uploadPicture(fileUrl, pictureUploadRequest, loginUser);
                 log.info("图片上传成功, id = {}", pictureVO.getId());

@@ -11,6 +11,12 @@ public class PictureUploadByBatchRequest {
     private String searchText;
 
     /**
+     * 名称前缀
+     */
+    private String namePrefix;
+
+
+    /**
      * 抓取数量
      */
     private Integer count = 10;
