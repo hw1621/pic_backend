@@ -26,6 +26,11 @@ public class Picture {
     private String url;
 
     /**
+     * 缩略图url
+     */
+    private String thumbnailUrl;
+
+    /**
      * 图片名称
      */
     private String name;
