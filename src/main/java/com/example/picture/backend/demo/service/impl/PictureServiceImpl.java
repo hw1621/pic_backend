@@ -93,6 +93,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         }
         picture.setName(picName);
         picture.setUrl(uploadPictureResult.getUrl());
+        picture.setThumbnailUrl(uploadPictureResult.getThumbnailUrl());
         picture.setPicSize(uploadPictureResult.getPicSize());
         picture.setPicWidth(uploadPictureResult.getPicWidth());
         picture.setPicHeight(uploadPictureResult.getPicHeight());

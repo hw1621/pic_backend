@@ -188,7 +188,7 @@ public class PictureController {
     }
 
     /**
-     * Get picture list by page（Admin Only）
+     * 获取管理页面的图片分页结果 (仅Admin可用)
      */
     @PostMapping("/list/page")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
@@ -202,7 +202,7 @@ public class PictureController {
     }
 
     /**
-     * Get pictureVO list by page
+     * 获取Home页面图片分页结果 (用户可用)
      */
     @PostMapping("/list/page/vo")
     public BaseResponse<Page<PictureVO>> listPictureVOByPage(@RequestBody PictureQueryRequest pictureQueryRequest,
@@ -243,7 +243,7 @@ public class PictureController {
         LOCAL_CACHE.put(cacheKey, cacheValue);
         // 存入Redis
         int cacheExpireTime = 300 + RandomUtil.randomInt(0, 300);
-        valueOps.set(cacheKey, cacheValue, cacheExpireTime);
+        valueOps.set(cacheKey, cacheValue, cacheExpireTime, TimeUnit.SECONDS);
 
         // 获取封装类
         return ResultUtils.success(pictureVOPage);
