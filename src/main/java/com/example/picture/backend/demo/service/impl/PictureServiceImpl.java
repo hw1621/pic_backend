@@ -1,6 +1,8 @@
 package com.example.picture.backend.demo.service.impl;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.List;
 
 import cn.hutool.core.collection.CollUtil;
@@ -12,6 +14,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.picture.backend.demo.exception.BusinessException;
 import com.example.picture.backend.demo.exception.ErrorCode;
 import com.example.picture.backend.demo.exception.ThrowUtils;
+import com.example.picture.backend.demo.manager.CosManager;
 import com.example.picture.backend.demo.manager.upload.FilePictureUpload;
 import com.example.picture.backend.demo.manager.upload.PictureUploadTemplate;
 import com.example.picture.backend.demo.manager.upload.UrlPictureUpload;
@@ -34,6 +37,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.beans.BeanUtils;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -58,6 +62,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
 
     @Resource
     private FilePictureUpload filePictureUpload;
+
+    @Resource
+    private CosManager cosManager;
 
     @Resource
     private UrlPictureUpload urlPictureUpload;
@@ -328,6 +335,34 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         }
         return uploadCount;
     }
+
+    @Async
+    @Override
+    public void clearPictureFile(Picture oldPicture) {
+        // 判断该图片是否被多条记录使用
+        String pictureUrl = oldPicture.getUrl();
+        long count = this.lambdaQuery()
+                .eq(Picture::getUrl, pictureUrl)
+                .count();
+        // 有不止一条记录用到了该图片，不清理
+        if (count > 1) {
+            return;
+        }
+        try {
+            String picturePath = new URL(pictureUrl).getPath();
+            cosManager.deleteObject(picturePath);
+
+            String thumbNailUrl = oldPicture.getThumbnailUrl();
+            if (StrUtil.isNotBlank(thumbNailUrl)) {
+                String thumbNailPath = new URL(thumbNailUrl).getPath();
+                cosManager.deleteObject(thumbNailPath);
+            }
+        } catch (MalformedURLException e) {
+            log.error("处理图片删除时遇到格式错误的 URL。图片 URL: {}", pictureUrl, e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "Url format error, can't delete picture on COS");
+        }
+    }
+
 
 
 

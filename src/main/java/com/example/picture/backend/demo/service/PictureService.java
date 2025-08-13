@@ -10,7 +10,7 @@ import com.example.picture.backend.demo.model.entity.Picture;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.picture.backend.demo.model.entity.User;
 import com.example.picture.backend.demo.model.vo.PictureVO;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.scheduling.annotation.Async;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -49,4 +49,6 @@ public interface PictureService extends IService<Picture> {
             User loginUser
     );
 
+    @Async
+    void clearPictureFile(Picture oldPicture);
 }
