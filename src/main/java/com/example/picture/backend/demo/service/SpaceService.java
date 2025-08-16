@@ -1,7 +1,15 @@
 package com.example.picture.backend.demo.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.example.picture.backend.demo.model.dto.space.SpaceAddRequest;
+import com.example.picture.backend.demo.model.dto.space.SpaceQueryRequest;
 import com.example.picture.backend.demo.model.entity.Space;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.example.picture.backend.demo.model.entity.User;
+import com.example.picture.backend.demo.model.vo.SpaceVO;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
 * @author hw1621
@@ -10,4 +18,15 @@ import com.baomidou.mybatisplus.extension.service.IService;
 */
 public interface SpaceService extends IService<Space> {
 
+    long addSpace(SpaceAddRequest spaceAddRequest, User loginUser);
+
+    QueryWrapper<Space> getQueryWrapper(SpaceQueryRequest spaceQueryRequest);
+
+    SpaceVO getSpaceVOFromSpace(Space space, HttpServletRequest request);
+
+    Page<SpaceVO> getSpaceVOPage(Page<Space> spacePage, HttpServletRequest request);
+
+    void validSpace(Space space, boolean add);
+
+    void fillSpaceBySpaceLevel(Space space);
 }
