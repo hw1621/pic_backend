@@ -161,17 +161,19 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         transactionTemplate.execute(status -> {
             boolean result = this.saveOrUpdate(picture);
             ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "Picture upload failed");
-            Long oldPicSize = 0L;
-            if (finalPictureId != null) {
-                Picture oldPicture = this.getById(finalPictureId);
-                oldPicSize = oldPicture.getPicSize();
+            if (finalSpaceId != null) {
+                Long oldPicSize = 0L;
+                if (finalPictureId != null) {
+                    Picture oldPicture = this.getById(finalPictureId);
+                    oldPicSize = oldPicture.getPicSize();
+                }
+                boolean update = spaceService.lambdaUpdate()
+                        .eq(Space::getId, finalSpaceId)
+                        .setSql("totalSize = totalSize + " + (picture.getPicSize() - oldPicSize))
+                        .setSql(finalPictureId == null, "totalCount = totalCount + 1")
+                        .update();
+                ThrowUtils.throwIf(!update, ErrorCode.OPERATION_ERROR, "Space update failed");
             }
-            boolean update = spaceService.lambdaUpdate()
-                    .eq(Space::getId, finalSpaceId)
-                    .setSql("totalSize = totalSize + " + (picture.getPicSize() - oldPicSize))
-                    .setSql(finalPictureId == null,"totalCount = totalCount + 1")
-                    .update();
-            ThrowUtils.throwIf(!update, ErrorCode.OPERATION_ERROR, "Space update failed");
             return picture;
         });
         return PictureVO.objToVo(picture);
