@@ -246,7 +246,7 @@ public class PictureController {
         // 存入本地缓存
         LOCAL_CACHE.put(cacheKey, cacheValue);
         // 存入Redis
-        int cacheExpireTime = 300 + RandomUtil.randomInt(0, 300);
+        int cacheExpireTime = 10 + RandomUtil.randomInt(0, 300);
         valueOps.set(cacheKey, cacheValue, cacheExpireTime, TimeUnit.SECONDS);
 
         // 获取封装类
