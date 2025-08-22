@@ -546,9 +546,37 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             }
         });
 
+        // 批量重命名
+        String nameRule = request.getNameRule();
+        fillPictureWithNameRule(pictureList, nameRule);
+
+
         boolean result = this.updateBatchById(pictureList);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
     }
+
+    /**
+     * nameRule 格式：图片{序号}
+     *
+     * @param pictureList
+     * @param nameRule
+     */
+    private void fillPictureWithNameRule(List<Picture> pictureList, String nameRule) {
+        if (CollUtil.isEmpty(pictureList) || StrUtil.isBlank(nameRule)) {
+            return;
+        }
+        long count = 1;
+        try {
+            for (Picture picture : pictureList) {
+                String pictureName = nameRule.replaceAll("\\{序号}", String.valueOf(count++));
+                picture.setName(pictureName);
+            }
+        } catch (Exception e) {
+            log.error("名称解析错误", e);
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "名称解析错误");
+        }
+    }
+
 
     @Transactional
     public void batchEditPictureData(PictureEditByBatchRequest request, User loginUser) {
