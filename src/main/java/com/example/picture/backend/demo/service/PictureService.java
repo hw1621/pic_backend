@@ -2,13 +2,13 @@ package com.example.picture.backend.demo.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.example.picture.backend.demo.api.aliyunai.model.CreateOutPaintingTaskResponse;
 import com.example.picture.backend.demo.model.dto.picture.*;
 import com.example.picture.backend.demo.model.entity.Picture;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.picture.backend.demo.model.entity.User;
 import com.example.picture.backend.demo.model.vo.PictureVO;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -61,6 +61,8 @@ public interface PictureService extends IService<Picture> {
 
     void deletePicture(long pictureId, User loginUser);
 
-    @Transactional(rollbackFor = Exception.class)
     void editPictureByBatch(PictureEditByBatchRequest request, User loginUser);
+
+    CreateOutPaintingTaskResponse createPictureOutPaintingTask(CreatePictureOutPaintingTaskRequest request, User loginUser);
+
 }
