@@ -11,6 +11,7 @@ import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 
+//从json权限文档里提取对应的权限配置
 @Component
 public class SpaceUserAuthManager {
 
