@@ -471,8 +471,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         Picture oldPicture = this.getById(id);
         ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR);
 
-        //校验权限
-        this.checkPictureAuth(loginUser, oldPicture);
+        //已经通过SaToken注解鉴权
+        //this.checkPictureAuth(loginUser, oldPicture);
 
         // 补充审核参数
         this.fillReviewParam(picture, loginUser);
@@ -490,8 +490,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         Picture oldPicture = this.getById(pictureId);
         ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR);
 
-        // 校验权限
-        checkPictureAuth(loginUser, oldPicture);
+        // 已经通过SaToken注解鉴权
+        // checkPictureAuth(loginUser, oldPicture);
 
         // 开启事务
         transactionTemplate.execute(status -> {
@@ -565,7 +565,10 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
     public CreateOutPaintingTaskResponse createPictureOutPaintingTask(CreatePictureOutPaintingTaskRequest request, User loginUser) {
         Long pictureId = request.getPictureId();
         Picture picture = Optional.ofNullable(this.getById(pictureId)).orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_ERROR));
-        checkPictureAuth(loginUser, picture);
+
+        // 已经通过SaToken注解鉴权
+        //checkPictureAuth(loginUser, picture);
+
         // 创建扩图任务
         CreateOutPaintingTaskRequest createOutPaintingTaskRequest = new CreateOutPaintingTaskRequest();
         CreateOutPaintingTaskRequest.Input input = new CreateOutPaintingTaskRequest.Input();
