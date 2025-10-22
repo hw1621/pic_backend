@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.picture.backend.demo.exception.BusinessException;
 import com.example.picture.backend.demo.exception.ErrorCode;
 import com.example.picture.backend.demo.exception.ThrowUtils;
+import com.example.picture.backend.demo.manager.sharding.DynamicShardingManager;
 import com.example.picture.backend.demo.model.dto.space.SpaceAddRequest;
 import com.example.picture.backend.demo.model.dto.space.SpaceQueryRequest;
 import com.example.picture.backend.demo.model.entity.Space;
@@ -24,6 +25,8 @@ import com.example.picture.backend.demo.mapper.SpaceMapper;
 import com.example.picture.backend.demo.service.SpaceUserService;
 import com.example.picture.backend.demo.service.UserService;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -54,6 +57,10 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space> implements
     private TransactionTemplate transactionTemplate;
 
     private final Map<Long, Object> lockMap = new ConcurrentHashMap<>();
+
+    @Resource
+    @Lazy
+    private DynamicShardingManager dynamicShardingManager;
 
 
     @Override
@@ -103,6 +110,8 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space> implements
                         result = spaceUserService.save(spaceUser);
                         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
                     }
+                    //创建分表
+                    dynamicShardingManager.createSpacePictureTable(space);
                     return space.getId();
                 });
                 return Optional.ofNullable(newSpaceId).orElse(-1L);
