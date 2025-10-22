@@ -9,6 +9,7 @@ import com.example.picture.backend.demo.constant.UserConstant;
 import com.example.picture.backend.demo.exception.BusinessException;
 import com.example.picture.backend.demo.exception.ErrorCode;
 import com.example.picture.backend.demo.exception.ThrowUtils;
+import com.example.picture.backend.demo.manager.auth.SpaceUserAuthManager;
 import com.example.picture.backend.demo.model.dto.space.*;
 import com.example.picture.backend.demo.model.entity.Space;
 import com.example.picture.backend.demo.model.entity.User;
@@ -17,6 +18,7 @@ import com.example.picture.backend.demo.model.vo.SpaceVO;
 import com.example.picture.backend.demo.service.SpaceService;
 import com.example.picture.backend.demo.service.UserService;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -35,6 +37,9 @@ public class SpaceController {
 
     @Resource
     private SpaceService spaceService;
+
+    @Resource
+    private SpaceUserAuthManager spaceUserAuthManager;
 
     @PostMapping("/add")
     public BaseResponse<Long> addSpace(@RequestBody SpaceAddRequest spaceAddRequest, HttpServletRequest request) {
@@ -120,6 +125,9 @@ public class SpaceController {
         ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR);
         SpaceVO spaceVO = spaceService.getSpaceVOFromSpace(space, request);
         User loginUser = userService.getLoginUser(request);
+        List<String> permissionList = spaceUserAuthManager.getPermissionList(space, loginUser);
+        spaceVO.setPermissionList(permissionList);
+
         // 获取封装类
         return ResultUtils.success(spaceVO);
     }

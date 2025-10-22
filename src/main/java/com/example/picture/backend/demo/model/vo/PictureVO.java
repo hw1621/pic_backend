@@ -102,6 +102,8 @@ public class PictureVO implements Serializable {
      */
     private UserVO user;
 
+    private List<String> permissionList;
+
     private static final long serialVersionUID = 1L;
 
     /**

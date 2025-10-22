@@ -18,11 +18,13 @@ import com.example.picture.backend.demo.exception.BusinessException;
 import com.example.picture.backend.demo.exception.ErrorCode;
 import com.example.picture.backend.demo.exception.ThrowUtils;
 import com.example.picture.backend.demo.manager.CosManager;
+import com.example.picture.backend.demo.manager.auth.SpaceUserAuthManager;
 import com.example.picture.backend.demo.manager.auth.StpKit;
 import com.example.picture.backend.demo.manager.auth.annotation.SaSpaceCheckPermission;
 import com.example.picture.backend.demo.manager.auth.model.SpaceUserPermissionConstant;
 import com.example.picture.backend.demo.model.dto.picture.*;
 import com.example.picture.backend.demo.model.entity.Picture;
+import com.example.picture.backend.demo.model.entity.Space;
 import com.example.picture.backend.demo.model.entity.User;
 import com.example.picture.backend.demo.model.enums.PictureReviewStatusEnum;
 import com.example.picture.backend.demo.model.vo.PictureTagCategory;
@@ -33,6 +35,7 @@ import com.example.picture.backend.demo.service.UserService;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.util.DigestUtils;
@@ -72,6 +75,9 @@ public class PictureController {
 
     @Resource
     private AliYunAiApi aliYunAiApi;
+
+    @Resource
+    private SpaceUserAuthManager spaceUserAuthManager;
 
     @PostMapping("/upload")
     @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.PICTURE_UPLOAD)
@@ -181,15 +187,24 @@ public class PictureController {
 
         //当用户获取私人空间图片时才做空间权限校验
         Long spaceId = picture.getSpaceId();
+        Space space = null;
+
         if (spaceId != null) {
             boolean hasPermission = StpKit.SPACE.hasPermission(SpaceUserPermissionConstant.PICTURE_VIEW);
             ThrowUtils.throwIf(!hasPermission, ErrorCode.OPERATION_ERROR);
             // 已经通过SaToken注解鉴权
             // pictureService.checkPictureAuth(loingUser, picture);
+            space = spaceService.getById(spaceId);
+            ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR);
         }
 
+        User loginUser = userService.getLoginUser(request);
+        List<String> permissionList = spaceUserAuthManager.getPermissionList(space, loginUser);
+        PictureVO pictureVO = pictureService.getPictureVOFromPicture(picture, request);
+        pictureVO.setPermissionList(permissionList);
+
         // 获取封装类
-        return ResultUtils.success(pictureService.getPictureVOFromPicture(picture, request));
+        return ResultUtils.success(pictureVO);
     }
 
     /**
