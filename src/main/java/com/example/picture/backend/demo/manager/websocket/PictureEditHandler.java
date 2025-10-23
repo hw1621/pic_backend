@@ -2,6 +2,7 @@ package com.example.picture.backend.demo.manager.websocket;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.json.JSONUtil;
+import com.example.picture.backend.demo.manager.websocket.disruptor.PictureEditEventProducer;
 import com.example.picture.backend.demo.manager.websocket.model.PictureEditActionEnum;
 import com.example.picture.backend.demo.manager.websocket.model.PictureEditMessageTypeEnum;
 import com.example.picture.backend.demo.manager.websocket.model.PictureEditRequestMessage;
@@ -12,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import groovyjarjarantlr4.v4.runtime.misc.NotNull;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -34,6 +36,8 @@ public class PictureEditHandler extends TextWebSocketHandler {
 
     // 保存所有连接的会话，key: pictureId, value: 用户会话集合
     private final Map<Long, Set<WebSocketSession>> pictureSessions = new ConcurrentHashMap<>();
+    @Autowired
+    private PictureEditEventProducer pictureEditEventProducer;
 
     private void broadcastToPicture(Long pictureId, PictureEditResponseMessage pictureEditResponseMessage, WebSocketSession excludeSession) throws Exception {
         Set<WebSocketSession> sessionSet = pictureSessions.get(pictureId);
@@ -124,24 +128,8 @@ public class PictureEditHandler extends TextWebSocketHandler {
         User user = (User) attributes.get("user");
         Long pictureId = (Long) attributes.get("pictureId");
 
-        // 调用对应的消息处理方法
-        switch (pictureEditMessageTypeEnum) {
-            case ENTER_EDIT:
-                handleEnterEditMessage(pictureEditRequestMessage, session, user, pictureId);
-                break;
-            case EDIT_ACTION:
-                handleEditActionMessage(pictureEditRequestMessage, session, user, pictureId);
-                break;
-            case EXIT_EDIT:
-                handleExitEditMessage(pictureEditRequestMessage, session, user, pictureId);
-                break;
-            default:
-                PictureEditResponseMessage pictureEditResponseMessage = new PictureEditResponseMessage();
-                pictureEditResponseMessage.setType(PictureEditMessageTypeEnum.ERROR.getValue());
-                pictureEditResponseMessage.setMessage("消息类型错误");
-                pictureEditResponseMessage.setUser(userService.getUserVOFromUser(user));
-                session.sendMessage(new TextMessage(JSONUtil.toJsonStr(pictureEditResponseMessage)));
-        }
+        // 把任务放到Disruptor环形队列当中
+        pictureEditEventProducer.publishEvent(pictureEditRequestMessage, session, user, pictureId);
     }
 
     public void handleEnterEditMessage(PictureEditRequestMessage pictureEditRequestMessage, WebSocketSession session, User user, Long pictureId) throws Exception {
